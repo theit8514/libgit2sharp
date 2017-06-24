@@ -92,7 +92,8 @@ namespace LibGit2Sharp.Tests
 
                 Assert.NotNull(repository.Refs.Head);
                 Assert.Equal("refs/heads/testref", repository.Refs.Head.TargetIdentifier);
-                Assert.True(repository.Refs.Select(r => r.CanonicalName).SequenceEqual(backend.References.Keys.Where(x => x != "HEAD")));
+                // repository.Refs iterates only keys with refs/
+                Assert.True(repository.Refs.Select(r => r.CanonicalName).SequenceEqual(backend.References.Keys.Where(x => x.StartsWith("refs/"))));
             }
         }
 
@@ -110,6 +111,7 @@ namespace LibGit2Sharp.Tests
                 backend.References["refs/heads/othersymbolic"] = new MockRefdbReference("refs/heads/testref");
                 backend.References["refs/tags/correct1"] = new MockRefdbReference(new ObjectId("be3563ae3f795b2b4353bcce3a527ad0a4f7f644"));
 
+                // repository.Tags iterates only keys with refs/tags/
                 Assert.True(repository.Tags.Select(r => r.CanonicalName).SequenceEqual(new List<string> { "refs/tags/correct1" }));
             }
         }
@@ -285,14 +287,15 @@ namespace LibGit2Sharp.Tests
             {
                 var refs = references.AsEnumerable();
 
-                refs = refs.Where(kvp => kvp.Key != "HEAD");
-                if (glob != null)
+                if (glob == null)
                 {
-                    var globRegex = new Regex("^" +
-                                              Regex.Escape(glob).Replace(@"\*", ".*").Replace(@"\?", ".") +
-                                              "$");
-                    refs = refs.Where(kvp => globRegex.IsMatch(kvp.Key));
+                    // Emulate redis example on glob: https://github.com/libgit2/libgit2-backends/blob/master/redis/hiredis.c
+                    glob = "refs/*";
                 }
+                var globRegex = new Regex("^" +
+                                          Regex.Escape(glob).Replace(@"\*", ".*").Replace(@"\?", ".") +
+                                          "$");
+                refs = refs.Where(kvp => globRegex.IsMatch(kvp.Key));
 
                 iterator = new MockReferenceIterator(this, refs.GetEnumerator());
 
