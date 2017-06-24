@@ -36,6 +36,8 @@ var cNames = new[] {
     "git_object",
     "git_rebase",
     "git_odb_stream",
+    "git_refdb",
+    "git_reference_iterator"
 };
 
 var csNames = new[] {
@@ -63,6 +65,8 @@ var csNames = new[] {
     "ObjectHandle",
     "RebaseHandle",
     "OdbStreamHandle",
+    "ReferenceDatabaseHandle",
+    "ReferenceIteratorHandle"
 };
 
 for (var i = 0; i < cNames.Length; i++)

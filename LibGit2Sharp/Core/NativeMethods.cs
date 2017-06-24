@@ -1009,6 +1009,23 @@ namespace LibGit2Sharp.Core
         internal static extern unsafe UIntPtr git_packbuilder_written(git_packbuilder* packbuilder);
 
         [DllImport(libgit2)]
+        internal static extern unsafe int git_refdb_set_backend(git_refdb* refdb, IntPtr backend);
+
+        [DllImport(libgit2)]
+        internal static extern unsafe void git_refdb_free(git_refdb* refdb);
+
+        [DllImport(libgit2)]
+        private static extern unsafe IntPtr git_reference__alloc(
+            [CustomMarshaler(typeof(StrictUtf8Marshaler), typeof(string))] byte* name,
+            IntPtr oid,
+            IntPtr peel);
+
+        [DllImport(libgit2)]
+        private static extern unsafe IntPtr git_reference__alloc_symbolic(
+            [CustomMarshaler(typeof(StrictUtf8Marshaler), typeof(string))] byte* name,
+            [CustomMarshaler(typeof(StrictUtf8Marshaler), typeof(string))] byte* target);
+
+        [DllImport(libgit2)]
         private static extern unsafe int git_reference_create(
             out git_reference* reference,
             git_repository* repo,
@@ -1043,6 +1060,9 @@ namespace LibGit2Sharp.Core
         [DllImport(libgit2)]
         private static unsafe extern int git_reference_is_valid_name(
             [CustomMarshaler(typeof(StrictUtf8Marshaler), typeof(string))] byte* refname);
+
+        [DllImport(libgit2)]
+        internal static extern unsafe void git_reference_iterator_free(git_reference_iterator* iter);
 
         [DllImport(libgit2)]
         internal static extern unsafe int git_reference_list(out GitStrArray array, git_repository* repo);
@@ -1412,6 +1432,9 @@ namespace LibGit2Sharp.Core
         [DllImport(libgit2, EntryPoint = "git_repository_path")]
         [return: CustomMarshaler(typeof(LaxFilePathNoCleanupMarshaler), typeof(FilePath))]
         private static extern unsafe byte* git_repository_path_(git_repository* repository);
+
+        [DllImport(libgit2)]
+        internal static extern unsafe int git_repository_refdb(out git_refdb* refdb, git_repository* repo);
 
         [DllImport(libgit2)]
         internal static extern unsafe void git_repository_set_config(

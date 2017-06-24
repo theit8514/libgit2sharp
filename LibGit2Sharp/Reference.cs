@@ -37,12 +37,7 @@ namespace LibGit2Sharp
         }
 
         // This overload lets public-facing methods avoid having to use the pointers directly
-        internal static unsafe T BuildFromPtr<T>(ReferenceHandle handle, Repository repo) where T : Reference
-        {
-            return BuildFromPtr<T>((git_reference*) handle.Handle, repo);
-        }
-
-        internal static unsafe T BuildFromPtr<T>(git_reference* handle, Repository repo) where T : Reference
+        internal static T BuildFromPtr<T>(ReferenceHandle handle, Repository repo) where T : Reference
         {
             GitReferenceType type = Proxy.git_reference_type(handle);
             string name = Proxy.git_reference_name(handle);
@@ -52,10 +47,10 @@ namespace LibGit2Sharp
             switch (type)
             {
                 case GitReferenceType.Symbolic:
-                    string targetIdentifier = Proxy.git_reference_symbolic_target(handle);
+                    string targetIdentifier1 = Proxy.git_reference_symbolic_target(handle);
 
-                    var targetRef = repo.Refs[targetIdentifier];
-                    reference = new SymbolicReference(repo, name, targetIdentifier, targetRef);
+                    var targetRef = repo.Refs[targetIdentifier1];
+                    reference = new SymbolicReference(repo, name, targetIdentifier1, targetRef);
                     break;
 
                 case GitReferenceType.Oid:
