@@ -115,6 +115,16 @@ namespace LibGit2Sharp.Core
 
         #region git_blob_
 
+        public static unsafe ObjectId git_blob_create_frombuffer(RepositoryHandle repo, IntPtr buffer, UIntPtr len)
+        {
+            var oid = new GitOid();
+
+            int result = NativeMethods.git_blob_create_frombuffer(ref oid, repo, buffer, len);
+            Ensure.ZeroResult(result);
+
+            return oid;
+        }
+
         public static unsafe IntPtr git_blob_create_fromstream(RepositoryHandle repo, FilePath hintpath)
         {
             IntPtr writestream_ptr;
@@ -2579,6 +2589,16 @@ namespace LibGit2Sharp.Core
             git_odb* handle;
             int res = NativeMethods.git_repository_odb(out handle, repo);
             Ensure.ZeroResult(res);
+
+            return new ObjectDatabaseHandle(handle, true);
+        }
+
+        public static unsafe ObjectDatabaseHandle git_repository_set_odb(RepositoryHandle repo)
+        {
+            git_odb* handle;
+            int res = NativeMethods.git_odb_new(out handle);
+            Ensure.ZeroResult(res);
+            NativeMethods.git_repository_set_odb(repo, handle);
 
             return new ObjectDatabaseHandle(handle, true);
         }

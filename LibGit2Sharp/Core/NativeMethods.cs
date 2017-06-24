@@ -93,6 +93,13 @@ namespace LibGit2Sharp.Core
         internal static extern unsafe void git_blame_free(git_blame* blame);
 
         [DllImport(libgit2)]
+        internal static extern unsafe int git_blob_create_frombuffer(
+            ref GitOid objectId,
+            git_repository* repositoryPtr,
+            IntPtr buffer,
+            UIntPtr len);
+
+        [DllImport(libgit2)]
         private static extern unsafe int git_blob_create_fromdisk(
             ref GitOid id,
             git_repository* repo,
@@ -900,6 +907,9 @@ namespace LibGit2Sharp.Core
             IntPtr payload);
 
         [DllImport(libgit2)]
+        internal static extern unsafe int git_odb_new(out git_odb* odb);
+
+        [DllImport(libgit2)]
         internal static extern unsafe int git_odb_open_wstream(out git_odb_stream* stream, git_odb* odb, Int64 size, GitObjectType type);
 
         [DllImport(libgit2)]
@@ -1452,6 +1462,11 @@ namespace LibGit2Sharp.Core
         internal static extern unsafe void git_repository_set_index(
             git_repository* repository,
             git_index* index);
+
+        [DllImport(libgit2)]
+        internal static extern unsafe void git_repository_set_odb(
+            git_repository* repository,
+            git_odb* index);
 
         [DllImport(libgit2)]
         private static extern unsafe int git_repository_set_workdir(

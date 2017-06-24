@@ -690,6 +690,8 @@ namespace LibGit2Sharp.Tests
                 Assert.Null(repo.Info.WorkingDirectory);
 
                 Assert.Throws<BareRepositoryException>(() => { var idx = repo.Index; });
+
+                Assert.NotNull(repo.ObjectDatabase);
             }
         }
 

@@ -82,5 +82,13 @@ namespace LibGit2Sharp
         {
             get { return Proxy.git_repository_message(repo.Handle); }
         }
+
+        /// <summary>
+        /// Returns true if the repository is in-memory.
+        /// </summary>
+        public virtual bool IsInMemory
+        {
+            get { return IsBare && Path == null; }
+        }
     }
 }

@@ -28,7 +28,11 @@ namespace LibGit2Sharp
         internal ObjectDatabase(Repository repo)
         {
             this.repo = repo;
-            handle = Proxy.git_repository_odb(repo.Handle);
+            // If the repo is in memory, git_repository_odb will throw, we should set a new odb instead.
+            if (repo.Info.IsInMemory)
+                handle = Proxy.git_repository_set_odb(repo.Handle);
+            else
+                handle = Proxy.git_repository_odb(repo.Handle);
 
             repo.RegisterForCleanup(handle);
         }
@@ -185,6 +189,21 @@ namespace LibGit2Sharp
         public virtual ObjectId Write<T>(byte[] data) where T : GitObject
         {
             return Proxy.git_odb_write(handle, data, GitObject.TypeToKindMap[typeof(T)]);
+        }
+
+        /// <summary>
+        /// Inserts a <see cref="Blob"/> into the object database, created from a string of content.
+        /// <para>Optionally, git filters will be applied to the content before storing it.</para>
+        /// </summary>
+        /// <param name="content">The content of the blob to be created.</param>
+        /// <returns>The created <see cref="Blob"/>.</returns>
+        public virtual Blob CreateBlobFromContent(string content)
+        {
+            var bufferPtr = StrictUtf8Marshaler.FromManaged(content);
+            var bufferLen = content.Length;
+
+            var id = Proxy.git_blob_create_frombuffer(repo.Handle, bufferPtr, (UIntPtr)bufferLen);
+            return repo.Lookup<Blob>(id);
         }
 
         /// <summary>
