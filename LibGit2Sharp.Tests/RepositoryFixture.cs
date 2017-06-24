@@ -695,6 +695,112 @@ namespace LibGit2Sharp.Tests
             }
         }
 
+        private Commit CreateCommit(Repository repository, string fileName, string content, string message = null)
+        {
+            if (message == null)
+            {
+                message = "i'm a commit message :)";
+            }
+
+            Blob newBlob = repository.ObjectDatabase.CreateBlobFromContent(content);
+
+            // Put the blob in a tree
+            TreeDefinition td = new TreeDefinition();
+            td.Add(fileName, newBlob, Mode.NonExecutableFile);
+            Tree tree = repository.ObjectDatabase.CreateTree(td);
+
+            // Committer and author
+            Signature committer = new Signature("James", "@jugglingnutcase", DateTime.Now);
+            Signature author = committer;
+
+            // Create binary stream from the text
+            return repository.ObjectDatabase.CreateCommit(
+                author,
+                committer,
+                message,
+                tree,
+                repository.Commits,
+                true);
+        }
+
+        [Fact]
+        public void CanCreateRepositoryWithoutBackends()
+        {
+            SelfCleaningDirectory scd = BuildSelfCleaningDirectory();
+
+            Repository.Init(scd.RootedDirectoryPath, true);
+            ObjectId commit1Id;
+            using (var repository = new Repository(scd.RootedDirectoryPath))
+            {
+                Commit commit1 = CreateCommit(repository, "filePath.txt", "Hello commit 1!");
+                commit1Id = commit1.Id;
+                repository.Refs.Add("refs/heads/master", commit1.Id);
+                Assert.Equal(1, repository.Commits.Count());
+                Assert.NotNull(repository.Refs.Head);
+                Assert.Equal(1, repository.Refs.Count());
+            }
+
+            using (var repository = new Repository(scd.RootedDirectoryPath))
+            {
+                Commit commit2 = CreateCommit(repository, "filePath.txt", "Hello commit 2!");
+                Assert.Equal(commit1Id, commit2.Parents.First().Id);
+
+                repository.Refs.UpdateTarget("refs/heads/master", commit2.Sha);
+                Assert.Equal(2, repository.Commits.Count());
+                Assert.Equal(1, repository.Refs.Count());
+                Assert.NotNull(repository.Refs.Head);
+                Assert.Equal(commit2.Sha, repository.Refs.Head.ResolveToDirectReference().TargetIdentifier);
+            }
+        }
+
+        [Fact]
+        public void CanCreateInMemoryRepositoryWithBackends()
+        {
+            OdbBackendFixture.MockOdbBackend odbBackend = new OdbBackendFixture.MockOdbBackend();
+            RefdbBackendFixture.MockRefdbBackend refdbBackend = new RefdbBackendFixture.MockRefdbBackend();
+
+            //Repository.Init(scd.RootedDirectoryPath, true);
+            ObjectId commit1Id;
+            using (var repository = new Repository())
+            {
+                repository.Refs.SetBackend(refdbBackend);
+                repository.ObjectDatabase.AddBackend(odbBackend, 5);
+
+                Commit commit1 = CreateCommit(repository, "filePath.txt", "Hello commit 1!");
+                commit1Id = commit1.Id;
+                repository.Refs.Add("refs/heads/master", commit1.Id);
+                Assert.Equal(1, repository.Commits.Count());
+                Assert.NotNull(repository.Refs.Head);
+                Assert.Equal(commit1.Sha, repository.Refs.Head.ResolveToDirectReference().TargetIdentifier);
+
+                // Emulating Git, repository.Refs enumerable does not include the HEAD.
+                // Thus, repository.Refs.Count will be 1 and refdbBackend.References.Count will be 2.
+                Assert.Equal(1, repository.Refs.Count());
+                Assert.Equal(2, refdbBackend.References.Count);
+            }
+
+            using (var repository = new Repository())
+            {
+                repository.Refs.SetBackend(refdbBackend);
+                repository.ObjectDatabase.AddBackend(odbBackend, 5);
+
+                Commit commit2 = CreateCommit(repository, "filePath.txt", "Hello commit 2!");
+                Assert.Equal(commit1Id, commit2.Parents.First().Id);
+                //repository.Refs.UpdateTarget(repository.Refs["refs/heads/master"], commit2.Id);
+
+                repository.Refs.UpdateTarget("refs/heads/master", commit2.Sha);
+                //var master = repository.Refs["refs/heads/master"];
+                //Assert.Equal(commit1Id.Sha, master.TargetIdentifier);
+                //repository.Refs.UpdateTarget("refs/heads/master", commit2.Id.Sha);
+                //repository.Refs.Add("refs/heads/master", commit2.Id);
+                //repository.Refs.Add("HEAD", "refs/heads/master");
+                Assert.Equal(2, repository.Commits.Count());
+                Assert.Equal(1, repository.Refs.Count());
+                Assert.NotNull(repository.Refs.Head);
+                Assert.Equal(commit2.Sha, repository.Refs.Head.ResolveToDirectReference().TargetIdentifier);
+            }
+        }
+
         [SkippableFact]
         public void CanListRemoteReferencesWithCredentials()
         {

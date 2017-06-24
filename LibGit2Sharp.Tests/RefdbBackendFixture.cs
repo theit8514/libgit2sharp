@@ -138,7 +138,7 @@ namespace LibGit2Sharp.Tests
         /// <summary>
         ///  Kind type of a <see cref="MockRefdbReference"/>
         /// </summary>
-        private enum ReferenceType
+        internal enum ReferenceType
         {
             /// <summary>
             ///  A direct reference, the target is an object ID.
@@ -151,7 +151,7 @@ namespace LibGit2Sharp.Tests
             Symbolic = 2,
         }
 
-        private class MockRefdbReference
+        internal class MockRefdbReference
         {
             public MockRefdbReference(string target)
             {
@@ -219,7 +219,7 @@ namespace LibGit2Sharp.Tests
             }
         }
 
-        private class MockRefdbBackend : RefdbBackend
+        internal class MockRefdbBackend : RefdbBackend
         {
             private readonly SortedDictionary<string, MockRefdbReference> references =
                 new SortedDictionary<string, MockRefdbReference>();

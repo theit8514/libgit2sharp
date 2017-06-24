@@ -253,7 +253,7 @@ namespace LibGit2Sharp.Tests
 
         #region MockOdbBackend
 
-        private class MockOdbBackend : OdbBackend, IDisposable
+        internal class MockOdbBackend : OdbBackend, IDisposable
         {
             public MockOdbBackend(Action disposer = null)
             {
