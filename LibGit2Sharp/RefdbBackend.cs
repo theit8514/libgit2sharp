@@ -12,14 +12,6 @@ namespace LibGit2Sharp
     public abstract class RefdbBackend
     {
         /// <summary>
-        ///   Requests the repository configured for this backend.
-        /// </summary>
-        protected abstract Repository Repository
-        {
-            get;
-        }
-
-        /// <summary>
         ///   Requests that the backend provide all optional operations that are supported.
         /// </summary>
         protected abstract RefdbBackendOperations SupportedOperations
@@ -80,6 +72,20 @@ namespace LibGit2Sharp
         public abstract void Compress();
 
         /// <summary>
+        ///  Query whether a particular reference has a log (may be empty).
+        /// </summary>
+        /// <param name="referenceCanonicalName"></param>
+        /// <returns>True if the reference has a log, false otherwise</returns>
+        public abstract bool HasLog(string referenceCanonicalName);
+
+        /// <summary>
+        ///  Make sure a particular reference will have a reflog which will be appended to on writes.
+        /// </summary>
+        /// <param name="referenceCanonicalName">The reference to ensure log</param>
+        /// <returns></returns>
+        protected abstract void EnsureLog(string referenceCanonicalName);
+
+        /// <summary>
         ///  Free any data associated with this backend.
         /// </summary>
         public abstract void Free();
@@ -102,6 +108,8 @@ namespace LibGit2Sharp
                     //nativeBackend.Rename = BackendEntryPoints.RenameCallback;
                     nativeBackend.Delete = BackendEntryPoints.DeleteCallback;
                     nativeBackend.Free = BackendEntryPoints.FreeCallback;
+                    nativeBackend.HasLog = BackendEntryPoints.HasLogCallback;
+                    nativeBackend.EnsureLog = BackendEntryPoints.EnsureLogCallback;
 
                     var supportedOperations = this.SupportedOperations;
 
@@ -136,6 +144,8 @@ namespace LibGit2Sharp
             public static readonly GitRefdbBackend.write_callback WriteCallback = Write;
             public static readonly GitRefdbBackend.delete_callback DeleteCallback = Delete;
             public static readonly GitRefdbBackend.compress_callback CompressCallback = Compress;
+            public static readonly GitRefdbBackend.has_log_callback HasLogCallback = HasLog;
+            public static readonly GitRefdbBackend.ensure_log_callback EnsureLogCallback = EnsureLog;
             public static readonly GitRefdbBackend.free_callback FreeCallback = Free;
 
             private static bool TryMarshalRefdbBackend(out RefdbBackend refdbBackend, IntPtr backend)
@@ -353,6 +363,49 @@ namespace LibGit2Sharp
                 }
 
                 return (int)GitErrorCode.Ok;
+            }
+
+            private static int HasLog(IntPtr backend, IntPtr referencePtr)
+            {
+                RefdbBackend refdbBackend;
+                if (!TryMarshalRefdbBackend(out refdbBackend, backend))
+                {
+                    return (int)GitErrorCode.Error;
+                }
+
+                string name = LaxUtf8Marshaler.FromNative(referencePtr);
+
+                try
+                {
+                    return refdbBackend.HasLog(name) ? 1 : 0;
+                }
+                catch (Exception ex)
+                {
+                    Proxy.giterr_set_str(GitErrorCategory.Reference, ex);
+                    return (int)GitErrorCode.Error;
+                }
+            }
+
+            private static int EnsureLog(IntPtr backend, IntPtr referencePtr)
+            {
+                RefdbBackend refdbBackend;
+                if (!TryMarshalRefdbBackend(out refdbBackend, backend))
+                {
+                    return (int)GitErrorCode.Error;
+                }
+
+                string name = LaxUtf8Marshaler.FromNative(referencePtr);
+
+                try
+                {
+                    refdbBackend.EnsureLog(name);
+                    return (int)GitErrorCode.Ok;
+                }
+                catch (Exception ex)
+                {
+                    Proxy.giterr_set_str(GitErrorCategory.Reference, ex);
+                    return (int)GitErrorCode.Error;
+                }
             }
 
             private static void Free(IntPtr backend)

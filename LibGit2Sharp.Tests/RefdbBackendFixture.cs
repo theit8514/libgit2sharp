@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using LibGit2Sharp.Tests.TestHelpers;
@@ -89,7 +90,9 @@ namespace LibGit2Sharp.Tests
                 backend.References["refs/heads/testref"] = new MockRefdbReference(new ObjectId("be3563ae3f795b2b4353bcce3a527ad0a4f7f644"));
                 backend.References["refs/heads/othersymbolic"] = new MockRefdbReference("refs/heads/testref");
 
-                Assert.True(repository.Refs.Select(r => r.CanonicalName).SequenceEqual(backend.References.Keys));
+                Assert.NotNull(repository.Refs.Head);
+                Assert.Equal("refs/heads/testref", repository.Refs.Head.TargetIdentifier);
+                Assert.True(repository.Refs.Select(r => r.CanonicalName).SequenceEqual(backend.References.Keys.Where(x => x != "HEAD")));
             }
         }
 
@@ -218,19 +221,27 @@ namespace LibGit2Sharp.Tests
 
         private class MockRefdbBackend : RefdbBackend
         {
-            private readonly Repository repository;
-
             private readonly SortedDictionary<string, MockRefdbReference> references =
                 new SortedDictionary<string, MockRefdbReference>();
 
-            public MockRefdbBackend(Repository repository)
+            private Action disposer;
+
+            public MockRefdbBackend(Action disposer = null)
             {
-                this.repository = repository;
+                references.Add("HEAD", new MockRefdbReference("refs/heads/master"));
+                this.disposer = disposer;
             }
 
-            protected override Repository Repository
+            public void Dispose()
             {
-                get { return repository; }
+                if (disposer == null)
+                {
+                    return;
+                }
+
+                disposer();
+
+                disposer = null;
             }
 
             public SortedDictionary<string, MockRefdbReference> References
@@ -274,6 +285,7 @@ namespace LibGit2Sharp.Tests
             {
                 var refs = references.AsEnumerable();
 
+                refs = refs.Where(kvp => kvp.Key != "HEAD");
                 if (glob != null)
                 {
                     var globRegex = new Regex("^" +
@@ -309,9 +321,18 @@ namespace LibGit2Sharp.Tests
                 Compressed = true;
             }
 
+            public override bool HasLog(string referenceCanonicalName)
+            {
+                return false;
+            }
+
+            protected override void EnsureLog(string referenceCanonicalName)
+            {
+            }
+
             public override void Free()
             {
-                references.Clear();
+                Dispose();
             }
 
             private class MockReferenceIterator : ReferenceIterator
@@ -365,7 +386,12 @@ namespace LibGit2Sharp.Tests
 
         private static MockRefdbBackend SetupBackend(Repository repository)
         {
-            var backend = new MockRefdbBackend(repository);
+            MockRefdbBackend backend = null;
+            Action cleanup = () =>
+            {
+                backend.References.Clear();
+            };
+            backend = new MockRefdbBackend(cleanup);
             repository.Refs.SetBackend(backend);
 
             return backend;

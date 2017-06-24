@@ -21,8 +21,8 @@ namespace LibGit2Sharp.Core
         public Delegate Rename; // TODO
         public delete_callback Delete;
         public compress_callback Compress;
-        public Delegate HasLog; // TODO
-        public Delegate EnsureLog; // TODO
+        public has_log_callback HasLog; // TODO
+        public ensure_log_callback EnsureLog; // TODO
         public free_callback Free;
         //public reflog_read_callback ReflogRead; // TODO
         //public reflog_write_callback ReflogWrite; // TODO
@@ -120,5 +120,25 @@ namespace LibGit2Sharp.Core
         public delegate int foreach_callback_callback(
             IntPtr referenceName,
             IntPtr data);
+
+        /// <summary>
+        ///   Query whether a particular reference has a log (may be empty).
+        /// </summary>
+        /// <param name="backend">[in] A pointer to the backend.</param>
+        /// <param name="referencePtr">[in] The reference to query log.</param>
+        /// <returns>1 if the log exists, 0 otherwise.</returns>
+        public delegate int has_log_callback(
+            IntPtr backend,
+            IntPtr referencePtr);
+
+        /// <summary>
+        ///   Make sure a particular reference will have a reflog which will be appended to on writes.
+        /// </summary>
+        /// <param name="backend">[in] A pointer to the backend.</param>
+        /// <param name="referencePtr">[in] The reference to ensure log.</param>
+        /// <returns>0 if successful; an error code otherwise.</returns>
+        public delegate int ensure_log_callback(
+            IntPtr backend,
+            IntPtr referencePtr);
     }
 }
